@@ -1,0 +1,6 @@
+# Webform protected file setting
+webform_protected_downloads.settings_link:
+  title: 'Protected download files'
+  route_name: webform_protected_downloads.settings
+  parent_id: entity.webform.settings
+  weight: 70

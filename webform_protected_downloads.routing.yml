@@ -1,0 +1,6 @@
+webform_protected_downloads.settings:
+  path: '/admin/structure/webform/manage/{webform}/settings/protected_file'
+  defaults:
+    _form: '\Drupal\webform_protected_downloads\Form\WebformProtectedDownloadsSettingsForm'
+  requirements:
+    _permission: 'access content'

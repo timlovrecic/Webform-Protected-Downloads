@@ -1,0 +1,17 @@
+name: 'Webform Protected Downloads'
+type: module
+description: 'Provides webform protected downloads'
+core: 8.x
+package: 'Webform'
+version: 8.x-0.1
+
+dependencies:
+  - webform
+  - file
+  - token
+
+# Listed in another file
+#files[] = webform_protected_downloads.module
+#files[] = webform_protected_downloads.install
+#files[] = webform_protected_downloads.page.inc
+#files[] = webform_protected_downloads.form.inc
