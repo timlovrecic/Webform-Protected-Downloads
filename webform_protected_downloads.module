@@ -1,1 +1,51 @@
 <?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\webform\Entity\Webform;
+use Drupal\file\Entity\File;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_form_alter().
+ * Alters the webform that has webform_protected_downloads enabled.
+ */
+function webform_protected_downloads_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  // Return if its not webform.
+  if (!isset($form['#webform_id'])) {
+    return;
+  }
+
+  // Get webform protected downloads settings.
+  $webform = Webform::load($form['#webform_id']);
+  $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
+  if (isset($webform_settings['enabled_protected_files']) && $webform_settings['enabled_protected_files']) {
+    $form['actions']['submit']['#submit'][] = 'webform_protected_downloads_webform_redirect';
+  }
+}
+
+/**
+ * Webform protected downloads form handler.
+ */
+function webform_protected_downloads_webform_redirect(array &$form, FormStateInterface &$form_state) {
+
+  $webform = Webform::load($form['#webform_id']);
+  $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
+
+  $fid = $webform_settings['protected_file'][0];
+  if (!$fid) {
+    drupal_set_message(t('Protected file is missing.'), 'error');
+    return;
+  }
+
+  $file = File::load($fid);
+  if (!$file) {
+    drupal_set_message(t('Protected file is missing.'), 'error');
+    return;
+  }
+
+  $url = Url::fromRoute('webform_protected_downloads.download');
+  $url->setRouteParameter('hash', 'c0d19e4483571ff07cb01a4d3f5484102d7f333c4cafa64a2821f55031ea6041'); // THIS WILL BE GENERATED DYNAMICALLY!
+  $form_state->setRedirectUrl($url);
+
+}
