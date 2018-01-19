@@ -6,17 +6,66 @@
 namespace Drupal\webform_protected_downloads\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\file\Entity\File;
+use Drupal\Component\Utility\Unicode;
+use Drupal\webform\Entity\Webform;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception;
 
 class WebformProtectedDownloadsController extends ControllerBase {
 
   /**
    * {@inheritdoc}
    */
-  public function test() {
-    $build = [
-      '#markup' => t('Hello World!'),
-    ];
-    return $build;
+  public function protectedFileDownload($hash) {
+
+    // Get corresponding protected file entry from given URL hash.
+    $db = \Drupal::database();
+    $query = $db->select('webform_protected_downloads', 'wpd')
+      ->fields('wpd', ['wid', 'hash', 'active', 'expire', 'onetime'])
+      ->condition('wpd.hash', $hash)
+      ->range(0, 1);
+    $results = $query->execute();
+    $result = $results->fetch(0);
+
+    // Get webform.
+    $webform = Webform::load($result->wid);
+    $wpd_settings = $webform->getThirdPartySettings('webform_protected_downloads');
+
+    // Return 404 if no results, inactive, expired, no webform found or file not found.
+    if (!$result || !$result->active || $result->expire < time() || !$webform || !$wpd_settings['protected_file']) {
+      throw new Exception\NotFoundHttpException();
+    }
+
+    // Get file response.
+    $response = $this->sendProtectedFileResponse(current($wpd_settings['protected_file']));
+
+    // Set onetime entry to inactive before returning.
+    $db->update('webform_protected_downloads')->fields(array());
+
+    return $response;
+  }
+
+  /**
+   * Gets the file from fid and creates a download http response.
+   */
+  private function sendProtectedFileResponse($fid) {
+    // Get all the needed parameters.
+    $file = File::load($fid);
+    if (!$file) {
+      throw new Exception\NotFoundHttpException();
+    }
+    $uri = $file->getFileUri($file);
+    $mime = \Drupal::service('file.mime_type.guesser')->guess($uri);
+
+    // Set HTTP header parameters.
+    $headers = array(
+      'Content-Type' => $mime . '; name="' . Unicode::mimeHeaderEncode(basename($uri)) . '"',
+      'Content-Length' => filesize($uri),
+      'Content-Disposition' => 'attachment; filename="' . Unicode::mimeHeaderEncode($file->getFilename()) . '"',
+      'Cache-Control' => 'private',
+    );
+    return new BinaryFileResponse($uri, 200, $headers);
   }
 
 }
