@@ -36,16 +36,6 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#title' => t('Enable serving protected files after webform submit - <b>Must be checked for other options to work</b>'),
       '#default_value' => $webform_settings['enabled_protected_files'] ? $webform_settings['enabled_protected_files'] : FALSE,
     ];
-    $form['download_method'] = [
-      '#type' => 'radios',
-      '#title' => ('Download method'),
-      '#options' => [
-        '1' => t('Redirect to download after form submitting'),
-        '2' => t('Send email with unique download link'),
-      ],
-      '#default_value' => $webform_settings['download_method'] ? $webform_settings['download_method'] : '',
-      '#required' => TRUE,
-    ];
     $form['expire_after'] = [
       '#type' => 'number',
       '#title' => t('Expire after X minutes'),
