@@ -92,8 +92,7 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       $webform->setThirdPartySetting("webform_protected_downloads", $key, $value);
     }
     $webform->save();
-
-    drupal_set_message("Saved!");
+    drupal_set_message("Settings saved.");
   }
 
 }
