@@ -15,6 +15,7 @@ use Symfony\Component\HttpKernel\Exception;
 class WebformProtectedDownloadsController extends ControllerBase {
 
   /**
+   * Protected file download controller.
    * {@inheritdoc}
    */
   public function protectedFileDownload($hash) {
@@ -41,8 +42,12 @@ class WebformProtectedDownloadsController extends ControllerBase {
     $response = $this->sendProtectedFileResponse(current($wpd_settings['protected_file']));
 
     // Set onetime entry to inactive before returning.
-    $db->update('webform_protected_downloads')->fields(array());
-
+    if ($result->onetime == 1) {
+      $db->update('webform_protected_downloads')
+        ->condition('hash', $hash)
+        ->fields(['active' => 0])
+        ->execute();
+    }
     return $response;
   }
 
@@ -50,6 +55,7 @@ class WebformProtectedDownloadsController extends ControllerBase {
    * Gets the file from fid and creates a download http response.
    */
   private function sendProtectedFileResponse($fid) {
+
     // Get all the needed parameters.
     $file = File::load($fid);
     if (!$file) {
