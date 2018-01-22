@@ -82,9 +82,11 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
           $results = $query->execute();
           $result = $results->fetch(0);
 
+          $host = \Drupal::request()->getHost();
+
           // Generate download url.
           $hash = $result->hash;
-          $url = Url::fromRoute('webform_protected_downloads.download', array('hash' => $hash));
+          $url = Url::fromRoute('webform_protected_downloads.download', ['hash' => $hash], ['absolute' => TRUE]);
           $link = Link::fromTextAndUrl(t('Download file'), $url)->toString();
 
           // Replace token.
