@@ -2,12 +2,16 @@
 
 use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Render\BubbleableMetadata;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 
 /**
+ * Add a webform protected download submission to the db.
  * Implements hook_webform_submission_insert.
  */
 function webform_protected_downloads_webform_submission_insert($submission) {
 
+  // Get submission's corresponding webform's settings.
   $webform = $submission->getWebform();
   $protected_downloads_settings = $webform->getThirdPartySettings('webform_protected_downloads');
 
@@ -37,6 +41,7 @@ function webform_protected_downloads_webform_submission_insert($submission) {
 }
 
 /**
+ * Set a custom token.
  * Implements hook_token_info().
  */
 function webform_protected_downloads_token_info() {
@@ -56,6 +61,7 @@ function webform_protected_downloads_token_info() {
 }
 
 /**
+ * Replaces protected_download_url token with the download link.
  * Implements hook_tokens().
  */
 function webform_protected_downloads_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
@@ -65,6 +71,8 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'protected_download_url':
+
+          // Find a file hash for current submission.
           $submission = $data["entity"];
           $db = \Drupal::database();
           $query = $db->select('webform_protected_downloads', 'wpd')
@@ -74,7 +82,13 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
           $results = $query->execute();
           $result = $results->fetch(0);
 
-          $replacements[$original] = '/webform_protected_file/' . $result->hash . '/download';
+          // Generate download url.
+          $hash = $result->hash;
+          $url = Url::fromRoute('webform_protected_downloads.download', array('hash' => $hash));
+          $link = Link::fromTextAndUrl(t('Download file'), $url)->toString();
+
+          // Replace token.
+          $replacements[$original] = $link;
           break;
       }
     }
