@@ -7,6 +7,7 @@ namespace Drupal\webform_protected_downloads\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\webform\Entity\Webform;
+use Drupal\Core\Config;
 
 class WebformProtectedDownloadsSettingsForm extends FormBase {
 
@@ -63,6 +64,12 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#value' => $this->t('Save'),
       '#button_type' => 'primary',
     ];
+
+    $private_folder = \Drupal::service('file_system')->realpath('private://');
+    if (!$private_folder) {
+      drupal_set_message("Private files folder is not set! Please setup private folder to use this module correctly.", "error");
+    }
+
     return $form;
   }
 
@@ -91,8 +98,13 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       }
       $webform->setThirdPartySetting("webform_protected_downloads", $key, $value);
     }
+
+    if ($values['enabled_protected_files'] == 0) {
+      drupal_set_message(t("Make sure to also remove webform protected downloads token instances after disabling this."), "warning");
+    }
+
     $webform->save();
-    drupal_set_message("Settings saved.");
+    drupal_set_message(t("Settings saved."));
   }
 
 }
