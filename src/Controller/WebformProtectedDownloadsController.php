@@ -34,7 +34,8 @@ class WebformProtectedDownloadsController extends ControllerBase {
     $wpd_settings = $webform->getThirdPartySettings('webform_protected_downloads');
 
     // Return 404 if no results, inactive, expired, no webform found or file not found.
-    if (!$result || !$result->active || $result->expire < time() || !$webform || !$wpd_settings['protected_file']) {
+    $expired = ($result->expire < time() && $result->expire != "0");
+    if (!$result || !$result->active || $expired || !$webform || !$wpd_settings['protected_file']) {
       throw new Exception\NotFoundHttpException();
     }
 
