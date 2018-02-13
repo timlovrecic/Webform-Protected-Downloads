@@ -7,7 +7,6 @@ namespace Drupal\webform_protected_downloads\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\webform\Entity\Webform;
-use Drupal\Core\Config;
 
 class WebformProtectedDownloadsSettingsForm extends FormBase {
 
@@ -65,9 +64,10 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#button_type' => 'primary',
     ];
 
+    // Print an error if private folder is not set.
     $private_folder = \Drupal::service('file_system')->realpath('private://');
     if (!$private_folder) {
-      drupal_set_message("Private files folder is not set! Please setup private folder to use this module correctly.", "error");
+      drupal_set_message(t("Private files folder is not set! Please setup private folder to use this module correctly."), "error");
     }
 
     return $form;
