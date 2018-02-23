@@ -34,6 +34,15 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
     ];
     // Get form settings.
     $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
+    // If no setting exist, set all to null.
+    if (!$webform_settings) {
+      $webform_settings['enabled_onetime'] = NULL;
+      $webform_settings['expire_after'] = NULL;
+      $webform_settings['enabled_protected_files'] = NULL;
+      $webform_settings['expired_link_page'] = NULL;
+      $webform_settings['protected_file'] = NULL;
+      $webform_settings['custom_link_page'] = NULL;
+    }
 
     // Create the form.
     $form['enabled_protected_files'] = [
@@ -78,7 +87,6 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#name' => 'protected_file',
       '#type' => 'managed_file',
       '#title' => t('Choose a file for protected download'),
-      '#size' => $form['protected_file']['#size'],
       '#multiple' => FALSE,
       '#theme_wrappers' => [],
       '#error_no_message' => TRUE,
