@@ -11,6 +11,8 @@ use Drupal\Component\Utility\Unicode;
 use Drupal\webform\Entity\Webform;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use \Drupal\Core\Routing\TrustedRedirectResponse;
 
 class WebformProtectedDownloadsController extends ControllerBase {
 
@@ -32,11 +34,27 @@ class WebformProtectedDownloadsController extends ControllerBase {
     // Get webform.
     $webform = Webform::load($result->wid);
     $wpd_settings = $webform->getThirdPartySettings('webform_protected_downloads');
-
-    // Return 404 if no results, inactive, expired, no webform found or file not found.
+    // Return error page if no results, inactive, expired, no webform found
+    // or file not found.
     $expired = ($result->expire < time() && $result->expire != "0");
     if (!$result || !$result->active || $expired || !$webform || !$wpd_settings['protected_file']) {
-      throw new Exception\NotFoundHttpException();
+      switch ($wpd_settings['expired_link_page']) {
+
+        case "homepage":
+          drupal_set_message($wpd_settings['error_message'], 'error');
+          return $this->redirect('<front>');
+
+        case "page_reload":
+          drupal_set_message($wpd_settings['error_message'], 'error');
+          return new RedirectResponse($webform->toUrl()->setAbsolute()->toString());
+
+        case "custom":
+          drupal_set_message($wpd_settings['error_message'], 'error');
+          return new TrustedRedirectResponse($wpd_settings['custom_link_page']);
+
+        default:
+          throw new Exception\NotFoundHttpException();
+      }
     }
 
     // Get file response.

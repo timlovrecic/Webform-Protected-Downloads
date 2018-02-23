@@ -26,7 +26,12 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
     $params = \Drupal::routeMatch()->getParameters();
     $webform_id = $params->get('webform');
     $webform = Webform::load($webform_id);
-
+    $options = [
+      '404' => $this->t('404 page'),
+      'homepage' => $this->t('Homepage with error message'),
+      'page_reload' => $this->t('Form page with error message'),
+      'custom' => $this->t('Custom page'),
+    ];
     // Get form settings.
     $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
 
@@ -46,6 +51,29 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#title' => t('One time visit link'),
       '#default_value' => $webform_settings['enabled_onetime'] ? $webform_settings['enabled_onetime'] : FALSE,
     ];
+    $form['expired_link_page'] = [
+      '#type' => 'radios',
+      '#title' => t('Link expired page'),
+      '#description' => t('Select a page to be routed when link expires.'),
+      '#options' => $options,
+      '#default_value' => $webform_settings['expired_link_page'] ? $webform_settings['expired_link_page'] : FALSE,
+    ];
+    $form['custom_link_page'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Custom link page'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="expired_link_page"]' => array('value' => 'custom'),
+        ),
+      ),
+      '#default_value' => $webform_settings['custom_link_page'],
+    );
+    $form['error_message'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Error message'),
+      '#description' => t('Error message to display.'),
+      '#default_value' => $this->t('File not found'),
+    );
     $form['protected_file'] = [
       '#name' => 'protected_file',
       '#type' => 'managed_file',
