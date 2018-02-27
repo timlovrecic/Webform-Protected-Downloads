@@ -45,17 +45,11 @@ function webform_protected_downloads_webform_submission_insert($submission) {
  * Implements hook_token_info().
  */
 function webform_protected_downloads_token_info() {
-  $type = array(
-    'name' => t('Webform protected downloads'),
-    'description' => t('Webform protected downloads tokens.'),
-    'needs-data' => 'webform',
-  );
   $submission['protected_download_url'] = array(
-    'name' => t("Download link"),
+    'name' => t("Protected download link"),
     'description' => t("Download link for webform protected downloads."),
   );
   return array(
-    'types' => array('webform_submission' => $type),
     'tokens' => array('webform_submission' => $submission),
   );
 }
