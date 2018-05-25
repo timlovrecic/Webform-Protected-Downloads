@@ -1,0 +1,3 @@
+services:
+  webform_protected_downloads.manager:
+    class: Drupal\webform_protected_downloads\WebformProtectedDownloadsManager
