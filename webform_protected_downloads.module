@@ -5,6 +5,8 @@ use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\webform\Entity\Webform;
+use Drupal\webform_protected_downloads\Entity\WebformProtectedDownloads;
+use Drupal\file\Entity\File;
 
 /**
  * Implements hook_theme().
@@ -22,8 +24,7 @@ function webform_protected_downloads_theme() {
 }
 
 /**
- * Add a webform protected download submission to the db.
- * Implements hook_webform_submission_insert.
+ * Implements hook_webform_submission_insert().
  */
 function webform_protected_downloads_webform_submission_insert($submission) {
 
@@ -40,23 +41,17 @@ function webform_protected_downloads_webform_submission_insert($submission) {
     return;
   }
 
-  // Prepare all the needed values.
-  $fields = [];
-  $fields['submission_uuid'] = $submission->uuid();
-  $fields['wid'] = $webform->id();
-  $fields['fid'] = current($protected_downloads_settings['protected_file']);
-  $fields['hash'] = Crypt::hashBase64($fields['submission_uuid'] . time());
-  $fields['expire'] = (!$protected_downloads_settings['expire_after']) ? 0 : time() + $protected_downloads_settings['expire_after'] * 60;
-  $fields['active'] = TRUE;
-  $fields['onetime'] = $protected_downloads_settings['enabled_onetime'];
-
-  // Insert to database.
-  $db = \Drupal::database();
-  $db->insert('webform_protected_downloads')->fields($fields)->execute();
+  WebformProtectedDownloads::create([
+    'webform_submission' => $submission,
+    'file' => File::load(current($protected_downloads_settings['protected_file'])),
+    'hash' => Crypt::hashBase64($submission->id() . time()),
+    'active' => $protected_downloads_settings['enabled_protected_files'],
+    'expire' => (!$protected_downloads_settings['expire_after']) ? 0 : time() + $protected_downloads_settings['expire_after'] * 60,
+    'onetime' => $protected_downloads_settings['enabled_onetime'],
+  ])->save();
 }
 
 /**
- * Set a custom token.
  * Implements hook_token_info().
  */
 function webform_protected_downloads_token_info() {
@@ -70,7 +65,6 @@ function webform_protected_downloads_token_info() {
 }
 
 /**
- * Replaces protected_download_url token with the download link.
  * Implements hook_tokens().
  */
 function webform_protected_downloads_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
@@ -82,23 +76,16 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
         case 'protected_download_url':
 
           // Find a file hash for current submission.
-          $submission = $data["entity"];
-          $db = \Drupal::database();
-          $query = $db->select('webform_protected_downloads', 'wpd')
-            ->fields('wpd', ['fid', 'hash', 'active', 'expire', 'onetime', 'wid'])
-            ->condition('wpd.submission_uuid', $submission->uuid())
-            ->range(0, 1);
-          $results = $query->execute();
-          $result = $results->fetch(0);
-
-          // Generate download url.
-          $hash = $result->hash;
+          $webformSubmission = $data['entity'];
+          $webformProtectedDownloadsManager = \Drupal::service('webform_protected_downloads.manager');
+          $webformProtectedDownload = $webformProtectedDownloadsManager->getSubmissionByUuid($webformSubmission->uuid());
+          $hash = $webformProtectedDownload->getHash();
           if (is_null($hash)) {
             $replacements[$original] = t("Download link not available");
             return $replacements;
           }
 
-          $webform = Webform::load($result->wid);
+          $webform = $webformSubmission->getWebform();
           $webformSettings = $webform->getThirdPartySettings('webform_protected_downloads');
 
           $url = Url::fromRoute('webform_protected_downloads.download', ['hash' => $hash], ['absolute' => TRUE]);
