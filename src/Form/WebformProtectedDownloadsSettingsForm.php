@@ -1,14 +1,57 @@
 <?php
-/**
- * @file
- * Contains \Drupal\webform_protected_downloads\Form\WebformProtectedDownloadsSettingsForm.
- */
+
 namespace Drupal\webform_protected_downloads\Form;
+
+use Drupal\Core\File\FileSystem;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\webform\Entity\Webform;
+use Drupal\Core\Routing\CurrentRouteMatch;
+use Drupal\file\Entity\File;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Class WebformProtectedDownloadsSettingsForm.
+ *
+ * @package Drupal\webform_protected_downloads\Form
+ */
 class WebformProtectedDownloadsSettingsForm extends FormBase {
+
+  /**
+   * CurrentRouteMatch definition.
+   *
+   * @var \Drupal\Core\Routing\CurrentRouteMatch
+   */
+  protected $routeMatch;
+
+  /**
+   * FileSystem definition.
+   *
+   * @var \Drupal\Core\File\FileSystem
+   */
+  protected $fileSystem;
+
+  /**
+   * WebformProtectedDownloadsSettingsForm constructor.
+   *
+   * @param \Drupal\Core\Routing\CurrentRouteMatch $routeMatch
+   *   The route match.
+   * @param \Drupal\Core\File\FileSystem $fileSystem
+   *   The file system.
+   */
+  public function __construct(CurrentRouteMatch $routeMatch, FileSystem $fileSystem) {
+    $this->routeMatch = $routeMatch;
+    $this->fileSystem = $fileSystem;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('current_route_match'),
+      $container->get('file_system')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -21,77 +64,94 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    // Get current webform .
+    $webform = $this->routeMatch->getParameter('webform');
+    // Get form settings.
+    $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
 
-    // Get current webform ID from the URL.
-    $params = \Drupal::routeMatch()->getParameters();
-    $webform_id = $params->get('webform');
-    $webform = Webform::load($webform_id);
     $options = [
       '404' => $this->t('404 page'),
       'homepage' => $this->t('Homepage with error message'),
       'page_reload' => $this->t('Form page with error message'),
       'custom' => $this->t('Custom page'),
     ];
-    // Get form settings.
-    $webform_settings = $webform->getThirdPartySettings('webform_protected_downloads');
-    // If no setting exist, set all to null.
-    if (!$webform_settings) {
-      $webform_settings['enabled_onetime'] = NULL;
-      $webform_settings['expire_after'] = NULL;
-      $webform_settings['enabled_protected_files'] = NULL;
-      $webform_settings['expired_link_page'] = NULL;
-      $webform_settings['protected_file'] = NULL;
-      $webform_settings['custom_link_page'] = NULL;
-    }
 
+    $form['fieldset'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Webform protected files settings'),
+    ];
     // Create the form.
-    $form['enabled_protected_files'] = [
+    $form['fieldset']['enabled_protected_files'] = [
       '#type' => 'checkbox',
-      '#title' => t('Enable serving protected files after webform submit - <b>Must be checked for other options to work</b>'),
-      '#default_value' => $webform_settings['enabled_protected_files'] ? $webform_settings['enabled_protected_files'] : FALSE,
+      '#title' => $this->t('Enable serving protected files after webform submit - <b>Must be checked for other options to work</b>'),
+      '#default_value' => isset($webform_settings['enabled_protected_files']) ? $webform_settings['enabled_protected_files'] : FALSE,
     ];
-    $form['expire_after'] = [
+    $form['fieldset']['container'] = [
+      '#type' => 'container',
+      '#states' => [
+        'invisible' => [
+          'input[name="enabled_protected_files"]' => ['checked' => FALSE],
+        ],
+      ],
+    ];
+    $form['fieldset']['container']['expire_after'] = [
       '#type' => 'number',
-      '#title' => t('Expire after X minutes'),
-      '#default_value' => $webform_settings['expire_after'] ? $webform_settings['expire_after'] : '',
+      '#title' => $this->t('Expire after X minutes'),
+      '#default_value' => isset($webform_settings['expire_after']) ? $webform_settings['expire_after'] : '',
     ];
-    $form['enabled_onetime'] = [
+    $form['fieldset']['container']['enabled_onetime'] = [
       '#type' => 'checkbox',
-      '#title' => t('One time visit link'),
-      '#default_value' => $webform_settings['enabled_onetime'] ? $webform_settings['enabled_onetime'] : FALSE,
+      '#title' => $this->t('One time visit link'),
+      '#default_value' => isset($webform_settings['enabled_onetime']) ? $webform_settings['enabled_onetime'] : FALSE,
     ];
-    $form['expired_link_page'] = [
+    $form['fieldset']['container']['expired_link_page'] = [
       '#type' => 'radios',
-      '#title' => t('Link expired page'),
+      '#title' => $this->t('Link expired page'),
       '#description' => t('Select a page to be routed when link expires.'),
       '#options' => $options,
-      '#default_value' => $webform_settings['expired_link_page'] ? $webform_settings['expired_link_page'] : FALSE,
+      '#default_value' => isset($webform_settings['expired_link_page']) ? $webform_settings['expired_link_page'] : FALSE,
     ];
-    $form['custom_link_page'] = array(
+    $form['fieldset']['container']['custom_link_page'] = array(
       '#type' => 'textfield',
-      '#title' => t('Custom link page'),
+      '#title' => $this->t('Custom link page'),
       '#states' => array(
         'visible' => array(
           ':input[name="expired_link_page"]' => array('value' => 'custom'),
         ),
       ),
-      '#default_value' => $webform_settings['custom_link_page'],
+      '#default_value' => isset($webform_settings['custom_link_page']),
     );
-    $form['error_message'] = array(
+    $defaultTokenText = 'Download file';
+    $form['fieldset']['container']['token_text'] = [
       '#type' => 'textfield',
-      '#title' => t('Error message'),
-      '#description' => t('Error message to display.'),
+      '#title' => $this->t('Token text title.'),
+      '#description' => $this->t('This title will be shown when token is replaced, default title is @default', ['@default' => $defaultTokenText]),
+      '#default_value' => isset($webform_settings['token_text']) ? $webform_settings['token_text'] : $defaultTokenText,
+    ];
+    $form['fieldset']['container']['error_message'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Error message'),
+      '#description' => $this->t('Error message to display.'),
       '#default_value' => $this->t('File not found'),
     );
-    $form['protected_file'] = [
+    $form['fieldset']['container']['protected_file'] = [
       '#name' => 'protected_file',
       '#type' => 'managed_file',
-      '#title' => t('Choose a file for protected download'),
+      '#title' => $this->t('Choose a file for protected download'),
       '#multiple' => FALSE,
       '#theme_wrappers' => [],
+      '#upload_validators'  => [
+        'file_validate_extensions' => isset($webform_settings['protected_file_extensions']) ? [$webform_settings['protected_file_extensions']] : ['gif png jpg jpeg'],
+      ],
       '#error_no_message' => TRUE,
       '#upload_location' => 'private://webform_protected_downloads/',
-      '#default_value' => $webform_settings['protected_file'] ? [current($webform_settings['protected_file'])] : NULL,
+      '#default_value' => isset($webform_settings['protected_file']) ? $webform_settings['protected_file'] : NULL,
+    ];
+    $form['fieldset']['container']['protected_file_extensions'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Valid File extensions'),
+      '#description' => $this->t("Seperate extensions with ,"),
+      '#default_value' => isset($webform_settings['protected_file_extensions']) ? $webform_settings['protected_file_extensions'] : '',
     ];
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
@@ -101,9 +161,9 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
     ];
 
     // Print an error if private folder is not set.
-    $private_folder = \Drupal::service('file_system')->realpath('private://');
+    $private_folder = $this->fileSystem->realpath('private://');
     if (!$private_folder) {
-      drupal_set_message(t("Private files folder is not set! Please setup private folder to use this module correctly."), "error");
+      $this->messenger()->addError($this->t('Private files folder is not set! Please setup private folder to use this module correctly.'));
     }
 
     return $form;
@@ -120,11 +180,8 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-    // Get the current webform entity.
-    $params = \Drupal::routeMatch()->getParameters();
-    $webform_id = $params->get('webform');
-    $webform = Webform::load($webform_id);
+    // Get current webform .
+    $webform = $this->routeMatch->getParameter('webform');
 
     // Save/update settings.
     $values = $form_state->getValues();
@@ -132,15 +189,26 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       if ($key == 'submit' || $key == 'op') {
         continue;
       }
+      elseif ($key == 'protected_file_extensions') {
+        // Remove white spaces and replace , white whitespace.
+        trim($value);
+        $value = str_replace(',', ' ', $value);
+      }
       $webform->setThirdPartySetting("webform_protected_downloads", $key, $value);
     }
 
+    // Set file status to TRUE or file will get deleted after cron.
+    if ($values['protected_file']) {
+      $fileId = current($values['protected_file']);
+      File::load($fileId)->set('status', TRUE)->save();
+    }
+
     if ($values['enabled_protected_files'] == 0) {
-      drupal_set_message(t("Make sure to also remove webform protected downloads token instances after disabling this."), "warning");
+      $this->messenger()->addWarning($this->t('Make sure to also remove webform protected downloads token instances after disabling this.'));
     }
 
     $webform->save();
-    drupal_set_message(t("Settings saved."));
+    $this->messenger()->addStatus($this->t('Settings saved.'));
   }
 
 }

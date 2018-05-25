@@ -3,7 +3,11 @@ webform_protected_downloads.settings:
   defaults:
     _form: '\Drupal\webform_protected_downloads\Form\WebformProtectedDownloadsSettingsForm'
   requirements:
-    _permission: 'access content'
+    _permission: 'administer webform'
+  options:
+    parameters:
+      webform:
+        type: 'entity:webform'
 
 webform_protected_downloads.download:
   path: '/webform_protected_file/{hash}/download'
