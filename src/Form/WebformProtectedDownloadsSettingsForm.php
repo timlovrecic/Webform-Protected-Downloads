@@ -43,6 +43,7 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       $webform_settings['expired_link_page'] = NULL;
       $webform_settings['protected_file'] = NULL;
       $webform_settings['custom_link_page'] = NULL;
+      $webform_settings['protected_file_extensions'] = NULL;
     }
 
     // Create the form.
@@ -90,9 +91,18 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       '#title' => t('Choose a file for protected download'),
       '#multiple' => FALSE,
       '#theme_wrappers' => [],
+      '#upload_validators'  => [
+        'file_validate_extensions' => isset($webform_settings['protected_file_extensions']) ? [$webform_settings['protected_file_extensions']] : ['gif png jpg jpeg'],
+      ],
       '#error_no_message' => TRUE,
       '#upload_location' => 'private://webform_protected_downloads/',
       '#default_value' => $webform_settings['protected_file'] ? [current($webform_settings['protected_file'])] : NULL,
+    ];
+    $form['protected_file_extensions'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Valid File extensions'),
+      '#description' => $this->t("Seperate extensions with ,"),
+      '#default_value' => isset($webform_settings['protected_file_extensions']) ? $webform_settings['protected_file_extensions'] : '',
     ];
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
@@ -133,9 +143,15 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       if ($key == 'submit' || $key == 'op') {
         continue;
       }
+      elseif ($key == 'protected_file_extensions') {
+        // Remove white spaces and replace , white whitespace.
+        trim($value);
+        $value = str_replace(',', ' ', $value);
+      }
       $webform->setThirdPartySetting("webform_protected_downloads", $key, $value);
     }
 
+    // Set file status to TRUE or file will get deleted after cron.
     if ($values['protected_file']) {
       $fileId = current($values['protected_file']);
       File::load($fileId)->set('status', TRUE)->save();
