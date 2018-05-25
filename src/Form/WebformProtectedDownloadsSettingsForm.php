@@ -79,6 +79,12 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
       ),
       '#default_value' => $webform_settings['custom_link_page'],
     );
+    $form['token_text'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Token text title.'),
+      '#description' => $this->t("This title will be shown when token is replaced, default title is 'Download file'."),
+      '#default_value' => isset($webform_settings['token_text']) ? $webform_settings['token_text'] : 'Download file',
+    ];
     $form['error_message'] = array(
       '#type' => 'textfield',
       '#title' => t('Error message'),

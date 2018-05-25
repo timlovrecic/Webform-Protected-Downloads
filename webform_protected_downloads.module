@@ -4,6 +4,7 @@ use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
+use Drupal\webform\Entity\Webform;
 
 /**
  * Add a webform protected download submission to the db.
@@ -69,7 +70,7 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
           $submission = $data["entity"];
           $db = \Drupal::database();
           $query = $db->select('webform_protected_downloads', 'wpd')
-            ->fields('wpd', ['fid', 'hash', 'active', 'expire', 'onetime'])
+            ->fields('wpd', ['fid', 'hash', 'active', 'expire', 'onetime', 'wid'])
             ->condition('wpd.submission_uuid', $submission->uuid())
             ->range(0, 1);
           $results = $query->execute();
@@ -81,8 +82,12 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
             $replacements[$original] = t("Download link not available");
             return $replacements;
           }
+
+          $webform = Webform::load($result->wid);
+          $webformSettings = $webform->getThirdPartySettings('webform_protected_downloads');
+
           $url = Url::fromRoute('webform_protected_downloads.download', ['hash' => $hash], ['absolute' => TRUE]);
-          $link = Link::fromTextAndUrl(t('Download file'), $url)->toString();
+          $link = Link::fromTextAndUrl(t($webformSettings['token_text']), $url)->toString();
 
           // Replace token.
           $replacements[$original] = $link;
