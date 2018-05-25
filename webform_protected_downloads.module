@@ -28,7 +28,6 @@ function webform_protected_downloads_webform_submission_insert($submission) {
   $fields = [];
   $fields['submission_uuid'] = $submission->uuid();
   $fields['wid'] = $webform->id();
-  reset($protected_downloads_settings['protected_file']);
   $fields['fid'] = current($protected_downloads_settings['protected_file']);
   $fields['hash'] = Crypt::hashBase64($fields['submission_uuid'] . time());
   $fields['expire'] = (!$protected_downloads_settings['expire_after']) ? 0 : time() + $protected_downloads_settings['expire_after'] * 60;

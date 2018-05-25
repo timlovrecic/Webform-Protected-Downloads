@@ -6,6 +6,7 @@
 namespace Drupal\webform_protected_downloads\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\file\Entity\File;
 use Drupal\webform\Entity\Webform;
 
 class WebformProtectedDownloadsSettingsForm extends FormBase {
@@ -133,6 +134,11 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
         continue;
       }
       $webform->setThirdPartySetting("webform_protected_downloads", $key, $value);
+    }
+
+    if ($values['protected_file']) {
+      $fileId = current($values['protected_file']);
+      File::load($fileId)->set('status', TRUE)->save();
     }
 
     if ($values['enabled_protected_files'] == 0) {
