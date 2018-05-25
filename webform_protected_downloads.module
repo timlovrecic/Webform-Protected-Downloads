@@ -7,6 +7,21 @@ use Drupal\Core\Url;
 use Drupal\webform\Entity\Webform;
 
 /**
+ * Implements hook_theme().
+ */
+function webform_protected_downloads_theme() {
+  $components = [];
+
+  $components['webform_protected_downloads_token'] = [
+    'variables' => [
+      'link' => '',
+    ],
+  ];
+
+  return $components;
+}
+
+/**
  * Add a webform protected download submission to the db.
  * Implements hook_webform_submission_insert.
  */
@@ -88,6 +103,13 @@ function webform_protected_downloads_tokens($type, $tokens, array $data, array $
 
           $url = Url::fromRoute('webform_protected_downloads.download', ['hash' => $hash], ['absolute' => TRUE]);
           $link = Link::fromTextAndUrl(t($webformSettings['token_text']), $url)->toString();
+
+          $element = [
+            '#theme' => 'webform_protected_downloads_token',
+            '#link' => $link,
+          ];
+
+          $link = \Drupal::service('renderer')->render($element);
 
           // Replace token.
           $replacements[$original] = $link;
