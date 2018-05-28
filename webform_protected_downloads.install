@@ -1,0 +1,15 @@
+<?php
+
+/**
+ * @file
+ * Install file.
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function webform_protected_downloads_uninstall() {
+  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type = $entity_update_manager->getEntityType('webform_protected_downloads');
+  $entity_update_manager->uninstallEntityType($entity_type);
+}

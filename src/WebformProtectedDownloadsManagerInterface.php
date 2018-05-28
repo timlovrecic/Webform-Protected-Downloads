@@ -10,14 +10,25 @@ namespace Drupal\webform_protected_downloads;
 interface WebformProtectedDownloadsManagerInterface {
 
   /**
-   * Function will search WebformSubmission by uuid and return WebformProtectedDownloads entity.
+   * Function will search submission by uuid.
    *
    * @param string $uuid
-   *   The uuid.
+   *   Uuid.
    *
    * @return mixed
-   *   Return FALSE|WebformProtectedDownloads
+   *   Return value or FALSE.
    */
   public function getSubmissionByUuid($uuid);
+
+  /**
+   * Get WebformProtectedDownloads entity by hash.
+   *
+   * @param string $hash
+   *   The hash.
+   *
+   * @return mixed
+   *   Return entity or false.
+   */
+  public function getSubmissionByHash($hash);
 
 }

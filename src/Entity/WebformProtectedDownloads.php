@@ -44,6 +44,26 @@ class WebformProtectedDownloads extends ContentEntityBase {
   }
 
   /**
+   * Check if link is active.
+   *
+   * @return bool
+   *   Return bool.
+   */
+  public function isActive() {
+    return (bool) $this->active->value;
+  }
+
+  /**
+   * Check if link is only one time usable.
+   *
+   * @return bool
+   *    Return bool.
+   */
+  public function isOneTimeLink() {
+    return (bool) $this->onetime->value;
+  }
+
+  /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
