@@ -4,7 +4,6 @@ use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Render\BubbleableMetadata;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\webform\Entity\Webform;
 use Drupal\webform_protected_downloads\Entity\WebformProtectedDownloads;
 use Drupal\file\Entity\File;
 
