@@ -119,7 +119,7 @@ class WebformProtectedDownloadsSettingsForm extends FormBase {
           ':input[name="expired_link_page"]' => array('value' => 'custom'),
         ),
       ),
-      '#default_value' => isset($webform_settings['custom_link_page']),
+      '#default_value' => isset($webform_settings['custom_link_page']) ? $webform_settings['custom_link_page'] : '',
     );
     $defaultTokenText = 'Download file';
     $form['fieldset']['container']['token_text'] = [
